@@ -1,0 +1,233 @@
+ANALISIS SITUASI — Apa yang berantakan dan kenapa
+    
+    1. Folder structure flat (semua di root)
+    
+    behavioral-finance-ai/
+    ├── app.py (878 baris, 44KB)
+    ├── bias_detector.py (2330 baris, 109KB)
+    ├── keywords.py (1332 baris, 62KB)
+    ├── llm.py (409 baris)
+    ├── counter_evidence.py (467 baris)
+    ├── intervention.py (311 baris)
+    ├── fundamental_data.py (298 baris)
+    ├── news_context.py (260 baris)
+    ├── price_fetcher.py (214 baris)
+    ├── rag.py (627 baris)
+    ├── ticker_extractor.py (376 baris)
+    ├── gemini_baseline.py, config.py, evaluate_final.py...
+    
+    Semua file dalam satu folder. Tidak ada struktur src/, tidak ada pemisahan concerns.
+    
+    2. bias_detector.py = 2330 baris, 109KB
+    Kode ini sudah jadi switch-case monster. Dari Layer 1 sampai Layer 4, terus ada adjustment rule A, B, C... sampe Z, AA, DD, EE, FF, GG, HH, II, JJ, KK, LL, MM, NN, OO, PP, QQ, RR, SS, TT, UU, VV, WW, XX, YY, ZZ — lebih dari 50 adjustment rules manual. Ini tidak maintainable.
+    
+    3. keywords.py punya duplikasi
+    Beberapa keyword muncul di 2+ category sekaligus (mis. "haka aja", "siap-siap jam", "bapak prajogo" muncul di FOMO_URGENCY dan lagi di bagian bawah).
+    
+    4. Kontradiksi bias_detector.py vs dokumentasi cognifi:
+    Dokumentasi (Bias Detection Logic): 4-layer sederhana (text → price → score → classify)
+    Kode Sebenarnya: 6-layer + 50+ adjustment rules manual
+    ────────────────────────────────────────
+    Dokumentasi (Bias Detection Logic): INTERVENTION_THRESHOLD = 0.40
+    Kode Sebenarnya: Threshold ada di code tapi banyak rule override yang langsung
+      nge-boost/drop 0.5+
+    ────────────────────────────────────────
+    Dokumentasi (Bias Detection Logic): Scoring: text 40% / price 60% (FOMO)
+    Kode Sebenarnya: Scoring sekarang jauh lebih kompleks, banyak boost 0.45-0.70 tanpa
+      proporsional
+    ────────────────────────────────────────
+    Dokumentasi (Bias Detection Logic): Confirmation bias: detection murni dari text
+    Kode Sebenarnya: Sekarang ada contextual adjustment yang campur aduk
+    
+    5. app.py campur aduk
+    - UI Streamlit styling CSS (150+ baris cuma buat style)
+    - Business logic (intent router, validation, API calls)
+    - Data processing (fundamental analysis, news fetching)
+    - Session management
+    - Semua dalam 1 file
+    
+    6. llm.py vs bias_detector.py double-classification
+    app.py memanggil keduanya: classify_bias_from_input() (LLM) DAN detect_bias() (rule-based). Hasilnya di-merge dengan logic max(). Ini redundan dan tidak jelas mana yang authoritative.
+    
+    
+    
+    RENCANA PERBAIKAN BERTAHAPE
+    
+    FASE 1 — Struktur & Clean Foundation (mulai dari sini)
+    1. Buat struktur folder: src/ untuk kode, docs/ untuk cognifi file, data/ untuk dataset
+    2. Pisah concerns: src/engine/ (bias detection, counter-evidence), src/ui/ (app.py Streamlit), src/api/ (llm.py, price_fetcher), src/data/ (fundamental, keywords)
+    3. Bersihkan keywords.py — hapus duplikasi, normalisasi format
+
+
+
+
+ ATOMIC FASE 1
+	Sekarang aku sudah pahami struktur kode secara mendalam. Ini breakdown fase 1 yang presisi — setiap langkah kecil, bisa dijalankan, dan verified.
+    
+    
+    
+    FASE 1 — STRUKTUR & CLEAN FOUNDATION
+    Breakdown Atomic Steps
+    
+    
+    
+    STEP 1: Buat struktur folder baru
+    
+    Tujuan: siapkan kontainer kosong tanpa mengubah file apa pun.
+    
+    
+    behavioral-finance-ai/
+    ├── src/
+    │   ├── engine/          ← bias_detector, counter_evidence, intervention
+    │   ├── engine/init.py
+    │   ├── api/             ← llm.py, price_fetcher, rag.py
+    │   ├── api/init.py
+    │   ├── data/            ← keywords.py, fundamental_data.py, news_context.py
+    │   ├── data/init.py
+    │   ├── ui/              ← app.py Streamlit
+    │   ├── ui/init.py
+    │   └── extractors/      ← ticker_extractor.py
+    │       └── init.py
+    ├── docs/                ← file dari "cognifi file/"
+    ├── tests/               ← test_bias_accuracy.py, evaluate_final.py, dll
+    ├── requirements.txt     ← (bikin dari venv)
+    └── .env.example         ← template API key
+    
+    
+    Action: Buat semua folder + init.py kosong. 0 risk.
+    
+    
+    
+    STEP 2: Pindahkan file core logic (engine)
+    
+    Pindah 3 file ini ke src/engine/:
+    - bias_detector.py
+    - counter_evidence.py
+    - intervention.py
+    
+    Update import: bias_detector.py import from price_fetcher import ... — ini harus jadi from ...api.price_fetcher import ...
+    
+    Action: mv file + patch import.
+    
+    
+    
+    STEP 3: Pindahkan file API layer
+    
+    Pindah ke src/api/:
+    - llm.py
+    - price_fetcher.py
+    - rag.py
+    
+    Update import:
+    - llm.py import from config import ... → from ...data.config import ... (config pindah ke data)
+    - llm.py import from rag import ... → from ...api.rag import ...
+    
+    
+    
+    STEP 4: Pindahkan file data layer
+    
+    Pindah ke src/data/:
+    - keywords.py
+    - fundamental_data.py
+    - news_context.py
+    - config.py
+    
+    
+    
+    STEP 5: Pindahkan ticker_extractor
+    
+    Pindah ke src/extractors/:
+    - ticker_extractor.py
+    
+    Update import: from price_fetcher import ... → from ...api.price_fetcher import ...
+    
+    
+    
+    STEP 6: Pindahkan app.py ke UI
+    
+    Pindah ke src/ui/:
+    - app.py
+    
+    Update semua import: ini yang paling banyak — semua from bias_detector import, from counter_evidence import, from llm import, from price_fetcher import, from news_context import, from ticker_extractor import harus jadi import relatif dari src/.
+    
+    
+    
+    STEP 7: Pindahkan "cognifi file/" ke docs/
+    
+    
+    mv "cognifi file/" docs/
+    
+    
+    
+    
+    STEP 8: Pindahkan test files ke tests/
+    
+    Pindah ke tests/:
+    - test_bias_accuracy.py
+    - evaluate_final.py
+    - run_all_tickers.py
+    - gemini_baseline.py
+    
+    Update import di test files yang import from bias_detector import ...
+    
+    
+    
+    STEP 9: Update sys.path di root-level runner scripts
+    
+    Bikin src/init.py yang bisa di-import.
+    Atau di tests/ dan root scripts, tambahkan sys.path.insert(0, str(Path(file).parent / "src")).
+    
+    
+    
+    STEP 10: Buat requirements.txt + .env.example
+    
+    
+    pip freeze > requirements.txt
+    cp .env .env.example  (jika ada .env)
+    
+    
+    
+    
+    STEP 11: RUN TEST — jalankan test_bias_accuracy.py
+    
+    Verifikasi semua import jalan dan test pass setelah restructure.
+    
+    
+    
+    Ringkasan per-step
+    
+    | Step | Apa                             | Risiko   | Estimasi |
+    |------|---------------------------------|----------|----------|
+    | 1    | Buat folder + init.py           | 0        | kecil    |
+    | 2    | mv engine/ files + patch import | rendah   | kecil    |
+    | 3    | mv api/ files + patch import    | rendah   | kecil    |
+    | 4    | mv data/ files                  | 0        | kecil    |
+    | 5    | mv extractors/ + patch import   | rendah   | kecil    |
+    | 6    | mv app.py + patch semua import  | menengah | menengah |
+    | 7    | mv cognifi file/                | 0        | kecil    |
+    | 8    | mv test files + patch import    | rendah   | kecil    |
+    | 9    | Fix sys.path di runner scripts  | rendah   | kecil    |
+    | 10   | requirements.txt + .env.example | 0        | kecil    |
+    | 11   | Run test verify                 | menengah | menengah |
+    
+    Total: 11 step kecil, tidak ada yang overlap, masing-masing bisa diverifikasi sendiri.
+
+
+
+
+	
+    
+    FASE 2 — Simplify Bias Detector
+    4. Refaktor bias_detector.py dari 2330 baris → modular classes per bias
+    5. Cleanup adjustment rules — grupin yang redundan, hapus yang tidak teruji
+    
+    FASE 3 — Fix Contradictions
+    6. Sinkronisasi kode vs dokumentasi
+    7. Decision: LLM vs rule-based mana yang jadi authoritative untuk classification
+    
+    FASE 4 — Polish
+    8. Optimasi app.py, proper error handling, type hints
+    
+    
+    
+    Mau mulai dari FASE 1 (struktur folder + bersihin duplikasi keywords) dulu? Ini aman karena tidak mengubah logic — hanya organisasi ulang. Atau mau fokus ke area lain duluan?

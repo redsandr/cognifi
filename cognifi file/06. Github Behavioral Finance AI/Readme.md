@@ -1,0 +1,5 @@
+- 1 gif/screenshot demo
+- Penjelasan gap Anthropic research (2–3 kalimat)
+- Architecture diagram
+- Quick start
+- Link ke writeup lengkap

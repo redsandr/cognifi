@@ -26,7 +26,7 @@
 
 import re
 import pandas as pd
-from price_fetcher import get_price_data as _pf_get_price
+from ...api.price_fetcher import get_price_data as _pf_get_price
 
 # =============================================================================
 # YFINANCE AVAILABILITY CHECK

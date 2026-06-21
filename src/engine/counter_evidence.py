@@ -1,5 +1,5 @@
-from price_fetcher import get_historical_df as _pf_hist, get_current_price as _pf_price
-from fundamental_data import get_fundamental as _get_fundamental
+from ...api.price_fetcher import get_historical_df as _pf_hist, get_current_price as _pf_price
+from ...data.fundamental_data import get_fundamental as _get_fundamental
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt

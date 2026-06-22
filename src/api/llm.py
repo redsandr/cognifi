@@ -1,6 +1,6 @@
 # llm.py
 from google import genai
-from config import GEMINI_API_KEY, GEMINI_MODEL
+from ...data.config import GEMINI_API_KEY, GEMINI_MODEL
 import json
 import re
 import time

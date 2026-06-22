@@ -18,7 +18,7 @@
 # ──────────────────────────────────────────────────────────
 
 import re
-from price_fetcher import get_price_data as _pf_validate
+from ...api.price_fetcher import get_price_data as _pf_validate
 
 # ── ALIAS DICTIONARY ──────────────────────────────────────
 # Format: "ticker.JK": ["alias1", "alias2", ...]

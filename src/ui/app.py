@@ -1,11 +1,11 @@
 # app.py
 import streamlit as st
-from bias_detector import detect_bias
-from counter_evidence import CounterEvidenceEngine
-from intervention import generate_intervention
-from ticker_extractor import extract_ticker_and_intent
+from ..engine.bias_detector import detect_bias
+from ..engine.counter_evidence import CounterEvidenceEngine
+from ..engine.intervention import generate_intervention
+from ..extractors.ticker_extractor import extract_ticker_and_intent
 from datetime import datetime
-from llm import (
+from ..api.llm import (
     generate_intervention_text,
     summarize_stock_condition,
     classify_bias_from_input,
@@ -13,7 +13,7 @@ from llm import (
     analyze_fundamental,
     _call_gemini,
 )
-from price_fetcher import get_current_price, get_ticker_info as _pf_get_info
+from ..api.price_fetcher import get_current_price, get_ticker_info as _pf_get_info
 import re
 import html
 import time
